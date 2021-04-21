@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  nginx:
+    build:
+      context: nginx
+    container_name: nginx
+    networks:
+      - nginx-rev-proxy-sample-network
+    tty: true
+    ports:
+      - "8080:80"
+    depends_on:
+      - node-app
+
+  node-app:
+    build:
+      context: node
+    container_name: node-app
+    entrypoint: sh entrypoint.sh
+    networks:
+      - nginx-rev-proxy-sample-network
+    volumes:
+      - ./node:/app
+    tty: true
+    depends_on:
+      - db
+
+  db:
+    image: mysql:5.7
+    command: --innodb-use-native-aio=0
+    container_name: db
+    restart: always
+    tty: true
+    volumes:
+      - nginx-rev-proxy-sample-db-volume:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - MYSQL_DATABASE=sample-db
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - nginx-rev-proxy-sample-network
+
+networks:
+  nginx-rev-proxy-sample-network:
+    driver: bridge
+
+volumes:
+  nginx-rev-proxy-sample-db-volume:
